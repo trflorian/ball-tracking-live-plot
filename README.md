@@ -6,11 +6,10 @@ In this project I showcase how you can create an animated plot wiht OpenCV and M
 
 ## 🌟 Quickstart
 
-This project uses [uv](https://docs.astral.sh/uv/getting-started/installation/) for setup. Simply sync the project dependencies and then run the `tracker.py` file to get started!
+This project uses [uv](https://docs.astral.sh/uv/getting-started/installation/) for setup. Simply run the `tracker.py` script with uv to install the project dependencies and get started!
 
 ```Shell
-uv sync
-uv run tracker.py
+uv run src/tracker.py
 ```
 
 ## 📈 Matplotlib + OpenCV
