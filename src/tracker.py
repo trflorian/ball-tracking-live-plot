@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-    cap = cv2.VideoCapture("ball.mp4")
+    cap = cv2.VideoCapture("media/ball.mp4")
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
     # initialize background model
