@@ -26,7 +26,7 @@ plot = cv2.cvtColor(plot, cv2.COLOR_RGB2BGR)
 
 ## 🎨 Blitting
 The naive draw call in matplotlib as shown above is quite expensive, the full figure needs to be re-drawn every frame. To improve the performance, I make use of a technique called [blitting](https://matplotlib.org/stable/users/explain/animations/blitting.html). 
-This allos me to only re-draw regions that have changed and therefore drastically redducing the rendering time.
+This allows me to only re-draw regions that have changed and therefore drastically redducing the rendering time.
 
 ```Python
 fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(10, 2), dpi=100)
