@@ -1,6 +1,6 @@
 # Ball Tracking with Live Trajectory Visualization
 
-In this project I showcase how you can create an animated plot wiht OpenCV and Matplotlib. To demonstrate the real-time animated plotting, I am tracking a ball that is thrown vertically into the air. The ball's vertical position, velocity and acceleration are plotted in the figure.
+In this project I showcase how you can create an animated plot with OpenCV and Matplotlib. To demonstrate the real-time animated plotting, I am tracking a ball that is thrown vertically into the air. The ball's vertical position, velocity and acceleration are plotted in the figure.
 
 ![2024-11-07_23-31-58-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/128367fc-f6f3-4c45-8405-e146bd22148c)
 
