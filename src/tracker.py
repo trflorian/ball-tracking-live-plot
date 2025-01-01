@@ -9,7 +9,7 @@ def main():
     cap = cv2.VideoCapture("media/ball.mp4")
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
-    max_time = 0.7
+    max_time = 0.72
     num_frames = int(max_time * fps)
 
     # initialize background model
@@ -31,14 +31,6 @@ def main():
     axs[2].set_title("Acceleration")
     axs[2].set_ylim(-30, 10)
 
-    axs[0].set_xticks(np.arange(0, 1.0, 0.1) * fps)
-
-    def frames_to_seconds(x, pos):
-        return f"{x / fps:.1f}"
-
-    formatter = FuncFormatter(frames_to_seconds)
-    axs[0].xaxis.set_major_formatter(formatter)
-
     pl_pos = axs[0].plot([], [], c="b")[0]
     pl_vel = axs[1].plot([], [], c="b")[0]
     pl_acc = axs[2].plot([], [], c="b")[0]
@@ -48,8 +40,7 @@ def main():
     pl_acc_pred = axs[2].plot([], [], c="g", linestyle="--")[0]
 
     for ax in axs:
-        ax.set_xlim(-1, max_time * fps + 1)
-        ax.set_xlabel("Time [s]")
+        ax.set_xlim(0, num_frames)
         ax.grid(True)
 
     fig.canvas.draw()
