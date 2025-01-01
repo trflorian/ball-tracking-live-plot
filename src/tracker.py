@@ -2,60 +2,15 @@ import time
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
-
-
-class KalmanFilter:
-    def __init__(self):
-        self.pos = None
-        self.vel = None
-        self.acc = None
-
-    def update(self, pos, vel, acc, dt):
-        if self.pos is None:
-            self.pos = pos
-        if self.vel is None:
-            self.vel = vel
-        if self.acc is None:
-            self.acc = acc
-
-        pred_next = self.predict_states(dt, 1)
-
-        a = 0.5
-        self.pos = a * pred_next[0, 0] + (1 - a) * pos
-        self.vel = a * pred_next[0, 1] + (1 - a) * vel
-        self.acc = a * pred_next[0, 2] + (1 - a) * acc
-
-    def get_transition_matrix(self, dt):
-        return np.array(
-            [
-                [1, dt, 0],
-                [0, 1, dt],
-                [0, 0, 1],
-            ]
-        )
-
-    def get_state_vec(self):
-        return np.array(
-            [
-                self.pos,
-                self.vel,
-                self.acc,
-            ]
-        )
-
-    def predict_states(self, dt_step, steps):
-        predictions = []
-        curr_state = self.get_state_vec()
-        A = self.get_transition_matrix(dt_step)
-        for _ in range(steps):
-            curr_state = np.matmul(A, curr_state)
-            predictions.append(curr_state)
-        return np.array(predictions)
+from matplotlib.ticker import FuncFormatter
 
 
 def main():
     cap = cv2.VideoCapture("media/ball.mp4")
     fps = int(cap.get(cv2.CAP_PROP_FPS))
+
+    max_time = 0.7
+    num_frames = int(max_time * fps)
 
     # initialize background model
     bg_sub = cv2.createBackgroundSubtractorMOG2(varThreshold=50, detectShadows=False)
@@ -67,7 +22,7 @@ def main():
 
     tracked_pos = []
 
-    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(10, 2), dpi=100)
+    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(12, 2), dpi=100)
 
     axs[0].set_title("Position")
     axs[0].set_ylim(0, 700)
@@ -75,6 +30,14 @@ def main():
     axs[1].set_ylim(-200, 200)
     axs[2].set_title("Acceleration")
     axs[2].set_ylim(-30, 10)
+
+    axs[0].set_xticks(np.arange(0, 1.0, 0.1) * fps)
+
+    def frames_to_seconds(x, pos):
+        return f"{x / fps:.1f}"
+
+    formatter = FuncFormatter(frames_to_seconds)
+    axs[0].xaxis.set_major_formatter(formatter)
 
     pl_pos = axs[0].plot([], [], c="b")[0]
     pl_vel = axs[1].plot([], [], c="b")[0]
@@ -85,13 +48,12 @@ def main():
     pl_acc_pred = axs[2].plot([], [], c="g", linestyle="--")[0]
 
     for ax in axs:
-        ax.set_xlim(0, 20)
+        ax.set_xlim(-1, max_time * fps + 1)
+        ax.set_xlabel("Time [s]")
         ax.grid(True)
 
     fig.canvas.draw()
     bg_axs = [fig.canvas.copy_from_bbox(ax.bbox) for ax in axs]
-
-    kf = KalmanFilter()
 
     while True:
         ret, frame = cap.read()
@@ -147,24 +109,26 @@ def main():
         vel = np.diff(pos)
         acc = np.diff(vel)
 
+        t_pos = range(len(pos))
+        t_vel = range(len(vel))
+        t_acc = range(len(acc))
+
         if len(pos) > 0 and len(vel) > 0 and len(acc) > 0:
-            if len(contours) > 0:
-                kf.update(pos[-1], vel[-1], acc[-1], dt=1)
+            pos_poly = np.polyfit(t_pos, pos, deg=2)
+            vel_poly = np.polyfit(t_vel, vel, deg=1)
+            acc_poly = np.polyfit(t_acc, acc, deg=0)
+            t_pred = range(num_frames + 5)
+            pl_pos_pred.set_data(t_pred, np.polyval(pos_poly, t_pred))
+            pl_vel_pred.set_data(t_pred, np.polyval(vel_poly, t_pred))
+            pl_acc_pred.set_data(t_pred, np.polyval(acc_poly, t_pred))
+        else:
+            pl_pos_pred.set_data([], [])
+            pl_vel_pred.set_data([], [])
+            pl_acc_pred.set_data([], [])
 
-            steps = 20
-            preds_future = kf.predict_states(dt_step=1, steps=steps)
-            preds_past = kf.predict_states(dt_step=-1, steps=steps)[::-1]
-            preds = np.concat([preds_past, [kf.get_state_vec()], preds_future])
-
-            t0 = len(pos)
-            t = t0 + np.array(range(steps * 2 + 1)) - steps - 1
-            pl_pos_pred.set_data(t, preds[:, 0])
-            pl_vel_pred.set_data(t, preds[:, 1])
-            pl_acc_pred.set_data(t, preds[:, 2])
-
-        pl_pos.set_data(range(len(pos)), pos)
-        pl_vel.set_data(range(len(vel)), vel)
-        pl_acc.set_data(range(len(acc)), acc)
+        pl_pos.set_data(t_pos, pos)
+        pl_vel.set_data(t_vel, vel)
+        pl_acc.set_data(t_acc, acc)
 
         fig.canvas.restore_region(bg_axs[0])
         axs[0].draw_artist(pl_pos)
