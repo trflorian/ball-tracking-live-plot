@@ -22,7 +22,7 @@ def main():
 
     tracked_pos = []
 
-    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(12, 2), dpi=100)
+    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(12, 3), dpi=100)
 
     axs[0].set_title("Position")
     axs[0].set_ylim(0, 700)
@@ -31,17 +31,32 @@ def main():
     axs[2].set_title("Acceleration")
     axs[2].set_ylim(-30, 10)
 
-    pl_pos = axs[0].plot([], [], c="b")[0]
-    pl_vel = axs[1].plot([], [], c="b")[0]
-    pl_acc = axs[2].plot([], [], c="b")[0]
+    pl_pos = axs[0].plot([], [], c="b", label="Measurement")[0]
+    pl_vel = axs[1].plot([], [], c="b", label="Measurement")[0]
+    pl_acc = axs[2].plot([], [], c="b", label="Measurement")[0]
 
-    pl_pos_pred = axs[0].plot([], [], c="g", linestyle="--")[0]
-    pl_vel_pred = axs[1].plot([], [], c="g", linestyle="--")[0]
-    pl_acc_pred = axs[2].plot([], [], c="g", linestyle="--")[0]
+    pl_pos_pred = axs[0].plot(
+        [], [], c="g", linestyle="--", label="Prediction", alpha=0.5
+    )[0]
+    pl_vel_pred = axs[1].plot(
+        [], [], c="g", linestyle="--", label="Prediction", alpha=0.5
+    )[0]
+    pl_acc_pred = axs[2].plot(
+        [], [], c="g", linestyle="--", label="Prediction", alpha=0.5
+    )[0]
+
+    mark_pos = axs[0].plot([], [], c="b", marker="o", markersize=5)[0]
+    mark_vel = axs[1].plot([], [], c="b", marker="o", markersize=5)[0]
+    mark_acc = axs[2].plot([], [], c="b", marker="o", markersize=5)[0]
 
     for ax in axs:
         ax.set_xlim(0, num_frames)
         ax.grid(True)
+
+    fig.subplots_adjust(0.05, 0.1, 0.85, 0.85)
+
+    handles, labels = ax.get_legend_handles_labels()
+    fig.legend(handles, labels, loc="right")
 
     fig.canvas.draw()
     bg_axs = [fig.canvas.copy_from_bbox(ax.bbox) for ax in axs]
@@ -112,10 +127,17 @@ def main():
             pl_pos_pred.set_data(t_pred, np.polyval(pos_poly, t_pred))
             pl_vel_pred.set_data(t_pred, np.polyval(vel_poly, t_pred))
             pl_acc_pred.set_data(t_pred, np.polyval(acc_poly, t_pred))
+
+            mark_pos.set_data([len(pos) - 1], [pos[-1]])
+            mark_vel.set_data([len(vel) - 1], [vel[-1]])
+            mark_acc.set_data([len(acc) - 1], [acc[-1]])
         else:
             pl_pos_pred.set_data([], [])
             pl_vel_pred.set_data([], [])
             pl_acc_pred.set_data([], [])
+            mark_pos.set_data([], [])
+            mark_vel.set_data([], [])
+            mark_acc.set_data([], [])
 
         pl_pos.set_data(t_pos, pos)
         pl_vel.set_data(t_vel, vel)
@@ -124,16 +146,19 @@ def main():
         fig.canvas.restore_region(bg_axs[0])
         axs[0].draw_artist(pl_pos)
         axs[0].draw_artist(pl_pos_pred)
+        axs[0].draw_artist(mark_pos)
         fig.canvas.blit(axs[0].bbox)
 
         fig.canvas.restore_region(bg_axs[1])
         axs[1].draw_artist(pl_vel)
         axs[1].draw_artist(pl_vel_pred)
+        axs[1].draw_artist(mark_vel)
         fig.canvas.blit(axs[1].bbox)
 
         fig.canvas.restore_region(bg_axs[2])
         axs[2].draw_artist(pl_acc)
         axs[2].draw_artist(pl_acc_pred)
+        axs[2].draw_artist(mark_acc)
         fig.canvas.blit(axs[2].bbox)
 
         buf = fig.canvas.buffer_rgba()
@@ -143,7 +168,7 @@ def main():
         # pad plot with white to match width of frame, same left and right padding
         pad = (frame.shape[1] - plot.shape[1]) // 2
         plot = cv2.copyMakeBorder(
-            plot, 50, 50, pad, pad, cv2.BORDER_CONSTANT, value=(255, 255, 255)
+            plot, 10, 10, pad, pad, cv2.BORDER_CONSTANT, value=(255, 255, 255)
         )
 
         # vstack frame and plot
