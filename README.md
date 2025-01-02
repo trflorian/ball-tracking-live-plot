@@ -1,8 +1,8 @@
 # Ball Tracking with Live Trajectory Visualization
 
-In this project I showcase how you can create an animated plot with OpenCV and Matplotlib. To demonstrate the real-time animated plotting, I am tracking a ball that is thrown vertically into the air. The ball's vertical position, velocity and acceleration are plotted in the figure.
+In this project I showcase how you can create an animated plot with OpenCV and Matplotlib. To demonstrate the real-time animated plotting, I am tracking a ball that is thrown vertically into the air. The ball's vertical position, velocity and acceleration are plotted in the figure. Furthermore polynomial functions are used to fit a model to the motion of the ball and predict its trajectory.
 
-![2024-11-07_23-31-58-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/128367fc-f6f3-4c45-8405-e146bd22148c)
+![Screencastfrom01 01 2025220355-ezgif com-video-to-gif-converter](https://github.com/user-attachments/assets/71c5818b-cac9-44b4-99dd-9a10355433ea)
 
 ## 🌟 Quickstart
 
@@ -71,3 +71,20 @@ while True:
 
 ## 🎭 Visualization of the Masks
 ![Screencastfrom11-07-2024103538PM-ezgif com-cut](https://github.com/user-attachments/assets/9209500a-94f4-4670-be64-c332dc839801)
+
+
+## 🔮 Trajectory Prediction
+Based on a simple physics model with constant acceleration equal to the gravitational acceleration, the ball's position, velocity and acceleration plots are polynomial functions of degree 2, 1 and 0.
+To calculate the polynomial factors, the polyfit numpy function is used. Then the polynomials are evaluated for each step in the timeframe and plotted on top of the tracked state of the ball.
+
+```
+poly_pos = np.polyfit(t_pos, pos, deg=2)
+poly_vel = np.polyfit(t_vel, vel, deg=1)
+poly_acc = np.polyfit(t_acc, acc, deg=0)
+
+t_pred = np.arange(num_frames + 5)
+
+polyval_pos = np.polyval(poly_pos, t_pred)
+polyval_vel = np.polyval(poly_vel, t_pred)
+polyval_acc = np.polyval(poly_acc, t_pred)
+```
