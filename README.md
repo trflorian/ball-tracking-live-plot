@@ -88,3 +88,6 @@ polyval_pos = np.polyval(poly_pos, t_pred)
 polyval_vel = np.polyval(poly_vel, t_pred)
 polyval_acc = np.polyval(poly_acc, t_pred)
 ```
+
+![image](https://github.com/user-attachments/assets/fb7c6d32-0a01-4d67-8e8e-454002128f15)
+
