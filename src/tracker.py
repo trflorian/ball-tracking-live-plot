@@ -53,7 +53,7 @@ def main():
         ax.set_xlim(0, num_frames)
         ax.grid(True)
 
-    fig.subplots_adjust(0.05, 0.1, 0.85, 0.85)
+    fig.subplots_adjust(left=0.05, bottom=0.1, right=0.85, top=0.85)
 
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, loc="right")
@@ -115,18 +115,24 @@ def main():
         vel = np.diff(pos)
         acc = np.diff(vel)
 
-        t_pos = range(len(pos))
-        t_vel = range(len(vel))
-        t_acc = range(len(acc))
+        t_pos = np.arange(len(pos))
+        t_vel = np.arange(len(vel))
+        t_acc = np.arange(len(acc))
 
         if len(pos) > 0 and len(vel) > 0 and len(acc) > 0:
-            pos_poly = np.polyfit(t_pos, pos, deg=2)
-            vel_poly = np.polyfit(t_vel, vel, deg=1)
-            acc_poly = np.polyfit(t_acc, acc, deg=0)
-            t_pred = range(num_frames + 5)
-            pl_pos_pred.set_data(t_pred, np.polyval(pos_poly, t_pred))
-            pl_vel_pred.set_data(t_pred, np.polyval(vel_poly, t_pred))
-            pl_acc_pred.set_data(t_pred, np.polyval(acc_poly, t_pred))
+            poly_pos = np.polyfit(t_pos, pos, deg=2)
+            poly_vel = np.polyfit(t_vel, vel, deg=1)
+            poly_acc = np.polyfit(t_acc, acc, deg=0)
+
+            t_pred = np.arange(num_frames + 5)
+
+            polyval_pos = np.polyval(poly_pos, t_pred)
+            polyval_vel = np.polyval(poly_vel, t_pred)
+            polyval_acc = np.polyval(poly_acc, t_pred)
+
+            pl_pos_pred.set_data(t_pred, polyval_pos)
+            pl_vel_pred.set_data(t_pred, polyval_vel)
+            pl_acc_pred.set_data(t_pred, polyval_acc)
 
             mark_pos.set_data([len(pos) - 1], [pos[-1]])
             mark_vel.set_data([len(vel) - 1], [vel[-1]])
@@ -175,7 +181,6 @@ def main():
         frame_annotated = cv2.vconcat([plot, frame_annotated])
 
         cv2.imshow("Frame", frame_annotated)
-        # cv2.imshow("Plot", plot)
 
         et = time.time()
 
