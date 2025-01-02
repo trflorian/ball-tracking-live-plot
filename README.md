@@ -77,7 +77,7 @@ while True:
 Based on a simple physics model with constant acceleration equal to the gravitational acceleration, the ball's position, velocity and acceleration plots are polynomial functions of degree 2, 1 and 0.
 To calculate the polynomial factors, the polyfit numpy function is used. Then the polynomials are evaluated for each step in the timeframe and plotted on top of the tracked state of the ball.
 
-```
+```Python
 poly_pos = np.polyfit(t_pos, pos, deg=2)
 poly_vel = np.polyfit(t_vel, vel, deg=1)
 poly_acc = np.polyfit(t_acc, acc, deg=0)
