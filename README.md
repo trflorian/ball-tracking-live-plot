@@ -91,3 +91,8 @@ polyval_acc = np.polyval(poly_acc, t_pred)
 
 ![image](https://github.com/user-attachments/assets/fb7c6d32-0a01-4d67-8e8e-454002128f15)
 
+## 🎥 Streaming Trajectory
+
+Check `src/stream.py` on how to use `deque` from `collections` to create a fixed-length buffer of trajectory points.
+
+![2025-01-26_17-18-11-ezgif com-optimize](https://github.com/user-attachments/assets/d5a91971-5df9-4777-9c66-854934e180de)
