@@ -14,7 +14,7 @@ from ball_tracking.core import Point2D
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--video_path",
+        "--video-path",
         type=Path,
         default=Path("media/ball.mp4"),
         help="Path to the video file",
