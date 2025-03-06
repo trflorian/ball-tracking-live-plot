@@ -1,5 +1,6 @@
-import numpy as np
 import cv2
+import numpy as np
+
 
 def colormap_rainbow(value: float) -> tuple[int, int, int]:
     """Map a value between 0 and 1 to a color in the rainbow colormap."""
@@ -7,7 +8,7 @@ def colormap_rainbow(value: float) -> tuple[int, int, int]:
     pixel_cmap_img = cv2.applyColorMap(pixel_img, cv2.COLORMAP_RAINBOW) # shape: (1, 1, 3)
     return pixel_cmap_img.flatten().tolist()
 
-def visualize_colormap():
+def visualize_colormap() -> None:
     target_shape = (500, 50, 3)
 
     value_range = np.linspace(0, 1, target_shape[0])

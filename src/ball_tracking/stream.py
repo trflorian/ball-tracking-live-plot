@@ -1,15 +1,16 @@
+import time
 from collections import deque
 from itertools import pairwise
-
 from pathlib import Path
 
-import time
 import cv2
-
+import numpy as np
 from colormap import colormap_rainbow
 
+from ball_tracking.types import Point2D
 
-def main():
+
+def main() -> None:
     use_alpha_blending = False
     trajectory_length = 40
     skip_seconds = 4.5
@@ -26,8 +27,8 @@ def main():
     )
 
     video_writer = cv2.VideoWriter(
-        video_path.with_name(video_path.stem + "_tracked.mp4"),
-        cv2.VideoWriter_fourcc(*"mp4v"),
+        str(video_path.with_name(video_path.stem + "_tracked.mp4")),
+        cv2.VideoWriter.fourcc(*"mp4v"),
         fps,
         video_resolution,
     )
@@ -35,9 +36,9 @@ def main():
     # initialize background model
     bg_sub = cv2.createBackgroundSubtractorMOG2(varThreshold=128, detectShadows=False)
 
-    tracked_pos = deque(maxlen=trajectory_length)
+    tracked_pos: deque[Point2D] = deque(maxlen=trajectory_length)
 
-    def reset():
+    def reset() -> None:
         cap.set(cv2.CAP_PROP_POS_FRAMES, int(fps * skip_seconds))
         tracked_pos.clear()
 
@@ -62,7 +63,7 @@ def main():
 
         # filter based on color
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        mask_color = cv2.inRange(hsv, (30, 30, 30), (100, 150, 150))
+        mask_color = cv2.inRange(hsv, np.array([30, 30, 30]), np.array([100, 150, 150]))
         mask_color = cv2.morphologyEx(
             mask_color,
             cv2.MORPH_OPEN,
@@ -71,12 +72,17 @@ def main():
 
         # filter based on motion
         mask_fg = bg_sub.apply(frame, learningRate=0)
-        mask_fg = cv2.dilate(mask_fg, None, iterations=2)
+        mask_fg = cv2.dilate(
+            mask_fg,
+            kernel=cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)),
+        )
 
         # combine both masks
         mask = cv2.bitwise_and(mask_color, mask_fg)
         mask = cv2.morphologyEx(
-            mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+            mask,
+            op=cv2.MORPH_OPEN,
+            kernel=cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5)),
         )
 
         # find largest contour corresponding to the ball we want to track
@@ -117,7 +123,7 @@ def main():
                 )
             else:
                 cv2.line(frame_annotated, pt1=p1, pt2=p2, color=color, thickness=2)
-        
+
         video_writer.write(frame_annotated)
 
         cv2.imshow("Frame", frame_annotated)

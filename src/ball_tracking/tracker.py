@@ -1,10 +1,14 @@
 import time
+
 import cv2
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+
+from ball_tracking.types import Point2D
 
 
-def main():
+def main() -> None:
     cap = cv2.VideoCapture("media/ball.mp4")
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
@@ -19,9 +23,10 @@ def main():
         exit(1)
     bg_sub.apply(frame0, learningRate=1.0)
 
-    tracked_pos = []
+    tracked_pos: list[Point2D] = []
 
-    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(12, 3), dpi=100)
+    fig = plt.figure(figsize=(12, 3), dpi=100)
+    axs: list[plt.Axes] = fig.subplots(nrows=1, ncols=3)
 
     axs[0].set_title("Position")
     axs[0].set_ylim(0, 700)
@@ -57,8 +62,10 @@ def main():
     handles, labels = ax.get_legend_handles_labels()
     fig.legend(handles, labels, loc="right")
 
-    fig.canvas.draw()
-    bg_axs = [fig.canvas.copy_from_bbox(ax.bbox) for ax in axs]
+    # draw canvas once
+    canvas = FigureCanvasAgg(fig)
+    canvas.draw()
+    bg_axs = [canvas.copy_from_bbox(ax.bbox) for ax in axs]
 
     while True:
         ret, frame = cap.read()
@@ -72,7 +79,11 @@ def main():
 
         # filter based on color
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        mask_color = cv2.inRange(hsv, (20, 0, 0), (100, 255, 255))
+        mask_color = cv2.inRange(
+            hsv,
+            lowerb=np.array([20, 0, 0]),
+            upperb=np.array([100, 255, 255]),
+        )
 
         # filter based on motion
         mask_fg = bg_sub.apply(frame, learningRate=0)
@@ -148,25 +159,25 @@ def main():
         pl_vel.set_data(t_vel, vel)
         pl_acc.set_data(t_acc, acc)
 
-        fig.canvas.restore_region(bg_axs[0])
+        canvas.restore_region(bg_axs[0])
         axs[0].draw_artist(pl_pos)
         axs[0].draw_artist(pl_pos_pred)
         axs[0].draw_artist(mark_pos)
-        fig.canvas.blit(axs[0].bbox)
+        canvas.blit(axs[0].bbox)
 
-        fig.canvas.restore_region(bg_axs[1])
+        canvas.restore_region(bg_axs[1])
         axs[1].draw_artist(pl_vel)
         axs[1].draw_artist(pl_vel_pred)
         axs[1].draw_artist(mark_vel)
-        fig.canvas.blit(axs[1].bbox)
+        canvas.blit(axs[1].bbox)
 
-        fig.canvas.restore_region(bg_axs[2])
+        canvas.restore_region(bg_axs[2])
         axs[2].draw_artist(pl_acc)
         axs[2].draw_artist(pl_acc_pred)
         axs[2].draw_artist(mark_acc)
-        fig.canvas.blit(axs[2].bbox)
+        canvas.blit(axs[2].bbox)
 
-        buf = fig.canvas.buffer_rgba()
+        buf = canvas.buffer_rgba()
         plot = np.asarray(buf)
         plot = cv2.cvtColor(plot, cv2.COLOR_RGB2BGR)
 
