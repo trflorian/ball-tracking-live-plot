@@ -1,3 +1,4 @@
+import logging
 import time
 from collections import deque
 from itertools import pairwise
@@ -11,6 +12,9 @@ from ball_tracking.types import Point2D
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+
     use_alpha_blending = False
     trajectory_length = 40
     skip_seconds = 4.5
@@ -45,7 +49,7 @@ def main() -> None:
     reset()
     ret, frame0 = cap.read()
     if not ret:
-        print("Error: cannot read video file")
+        logger.error("Error: cannot read video file")
         exit(1)
     bg_sub.apply(frame0, learningRate=1.0)
 
