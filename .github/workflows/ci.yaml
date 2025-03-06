@@ -24,4 +24,5 @@ jobs:
         uses: astral-sh/ruff-action@v3
 
       - name: Type check with mypy
-        uses: jpetrucciani/mypy-check@1.14.1
+        run: uv run mypy src
+        
