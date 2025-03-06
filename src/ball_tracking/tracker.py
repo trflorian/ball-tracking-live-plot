@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
-from ball_tracking.types import Point2D
+from ball_tracking.core import Point2D
 
 
 def main() -> None:

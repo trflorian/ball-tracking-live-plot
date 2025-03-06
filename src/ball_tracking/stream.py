@@ -6,9 +6,9 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from colormap import colormap_rainbow
 
-from ball_tracking.types import Point2D
+from ball_tracking.colormap import colormap_rainbow
+from ball_tracking.core import Point2D
 
 
 def main() -> None:

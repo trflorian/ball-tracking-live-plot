@@ -9,7 +9,7 @@ resolution-markers = [
 [[package]]
 name = "ball-tracking"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "matplotlib" },
     { name = "opencv-python" },
