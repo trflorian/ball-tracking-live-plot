@@ -13,6 +13,10 @@ dependencies = [
     "opencv-python>=4.10.0.84",
 ]
 
+[project.scripts]
+tracking = "ball_tracking.tracking:main"
+trajectory = "ball_tracking.trajectory:main"
+
 [dependency-groups]
 dev = [
     "mypy>=1.15.0",

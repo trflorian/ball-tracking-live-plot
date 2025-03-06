@@ -1,5 +1,7 @@
+import argparse
 import logging
 import time
+from pathlib import Path
 
 import cv2
 import matplotlib.pyplot as plt
@@ -9,11 +11,33 @@ from matplotlib.backends.backend_agg import FigureCanvasAgg
 from ball_tracking.core import Point2D
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--video_path",
+        type=Path,
+        default=Path("media/ball.mp4"),
+        help="Path to the video file",
+    )
+    parser.add_argument(
+        "--loop",
+        action="store_true",
+        help="Loop the video",
+    )
+    parser.add_argument(
+        "--show-masks",
+        action="store_true",
+        help="Show the masks used for filtering",
+    )
+    return parser.parse_args()
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
-    cap = cv2.VideoCapture("media/ball.mp4")
+    args = parse_args()
+
+    cap = cv2.VideoCapture(str(args.video_path))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
 
     max_time = 0.72
@@ -74,9 +98,12 @@ def main() -> None:
     while True:
         ret, frame = cap.read()
         if not ret:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
-            tracked_pos.clear()
-            continue
+            if args.loop:
+                cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+                tracked_pos.clear()
+                continue
+            else:
+                break
         frame_annotated = frame.copy()
 
         st = time.time()
@@ -206,8 +233,10 @@ def main() -> None:
         key = cv2.waitKey(sleep_time) & 0xFF
         if key & 0xFF == ord("q"):
             break
-
+    
     cap.release()
+    
+    cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 

@@ -1,3 +1,4 @@
+import argparse
 import logging
 import time
 from collections import deque
@@ -11,14 +12,54 @@ from ball_tracking.colormap import colormap_rainbow
 from ball_tracking.core import Point2D
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--video_path",
+        type=Path,
+        default=Path("media/ball.mp4"),
+        help="Path to the video file",
+    )
+    parser.add_argument(
+        "--alpha-blending",
+        action="store_true",
+        default=False,
+        help="Use alpha blending to smooth the trajectory",
+    )
+    parser.add_argument(
+        "--trajectory-length",
+        type=int,
+        default=40,
+        help="Number of frames to keep in the trajectory",
+    )
+    parser.add_argument(
+        "--skip-seconds",
+        type=float,
+        default=4.5,
+        help="Number of seconds to skip in the video",
+    )
+    parser.add_argument(
+        "--loop",
+        action="store_true",
+        help="Loop the video",
+    )
+    parser.add_argument(
+        "--show-masks",
+        action="store_true",
+        help="Show the masks used for filtering",
+    )
+    parser.add_argument(
+        "--save-video",
+        action="store_true",
+        help="Save the video with the tracked ball",
+    )
+    return parser.parse_args()
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
 
-    use_alpha_blending = False
-    trajectory_length = 40
-    skip_seconds = 4.5
-    looping = False
+    args = parse_args()
 
     video_path = Path("media/ball3.mp4")
 
@@ -30,20 +71,23 @@ def main() -> None:
         int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)),
     )
 
-    video_writer = cv2.VideoWriter(
-        str(video_path.with_name(video_path.stem + "_tracked.mp4")),
-        cv2.VideoWriter.fourcc(*"mp4v"),
-        fps,
-        video_resolution,
-    )
+    if args.save_video:
+        video_writer = cv2.VideoWriter(
+            filename=str(video_path.with_name(video_path.stem + "_tracked.mp4")),
+            fourcc=cv2.VideoWriter.fourcc(*"mp4v"),
+            fps=fps,
+            frameSize=video_resolution,
+        )
+    else:
+        video_writer = None
 
     # initialize background model
     bg_sub = cv2.createBackgroundSubtractorMOG2(varThreshold=128, detectShadows=False)
 
-    tracked_pos: deque[Point2D] = deque(maxlen=trajectory_length)
+    tracked_pos: deque[Point2D] = deque(maxlen=args.trajectory_length)
 
     def reset() -> None:
-        cap.set(cv2.CAP_PROP_POS_FRAMES, int(fps * skip_seconds))
+        cap.set(cv2.CAP_PROP_POS_FRAMES, int(fps * args.skip_seconds))
         tracked_pos.clear()
 
     reset()
@@ -56,7 +100,7 @@ def main() -> None:
     while True:
         ret, frame = cap.read()
         if not ret:
-            if looping:
+            if args.loop:
                 reset()
                 continue
             else:
@@ -116,7 +160,7 @@ def main() -> None:
             norm_idx = i / traj_len
             color = colormap_rainbow(norm_idx)
 
-            if use_alpha_blending:
+            if args.alpha_blending:
                 # Create a temporary image to draw the line
                 temp = frame_annotated.copy()
                 cv2.line(temp, pt1=p1, pt2=p2, color=color, thickness=2)
@@ -128,12 +172,14 @@ def main() -> None:
             else:
                 cv2.line(frame_annotated, pt1=p1, pt2=p2, color=color, thickness=2)
 
-        video_writer.write(frame_annotated)
+        if video_writer is not None:
+            video_writer.write(frame_annotated)
 
         cv2.imshow("Frame", frame_annotated)
 
-        cv2.imshow("Mask FG", mask_fg)
-        cv2.imshow("Mask Color", mask_color)
+        if args.show_masks:
+            cv2.imshow("Mask FG", mask_fg)
+            cv2.imshow("Mask Color", mask_color)
 
         et = time.time()
 
@@ -149,7 +195,10 @@ def main() -> None:
             reset()
 
     cap.release()
-    video_writer.release()
+    if video_writer is not None:
+        video_writer.release()
+    
+    cv2.waitKey(0)
     cv2.destroyAllWindows()
 
 
