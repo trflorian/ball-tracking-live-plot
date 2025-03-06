@@ -1,9 +1,9 @@
-name: ruff
+name: ci
 on:
   push:
     branches: [ main ]
 jobs:
-  Explore-GitHub-Actions:
+  lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -15,7 +15,6 @@ jobs:
     - name: Setup Python with uv
       uses: astral-sh/setup-uv@v5
       with:
-        enable-cache: true
         python-version: ${{ matrix.python-version }}
 
     - name: Lint with ruff
