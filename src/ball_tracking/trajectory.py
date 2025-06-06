@@ -6,6 +6,7 @@ from pathlib import Path
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from ball_tracking.core import Point2D
@@ -31,6 +32,7 @@ def parse_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
@@ -54,7 +56,7 @@ def main() -> None:
     tracked_pos: list[Point2D] = []
 
     fig = plt.figure(figsize=(12, 3), dpi=100)
-    axs: list[plt.Axes] = fig.subplots(nrows=1, ncols=3)
+    axs: list[Axes] = fig.subplots(nrows=1, ncols=3)
 
     axs[0].set_title("Position")
     axs[0].set_ylim(0, 700)
@@ -233,9 +235,9 @@ def main() -> None:
         key = cv2.waitKey(sleep_time) & 0xFF
         if key & 0xFF == ord("q"):
             break
-    
+
     cap.release()
-    
+
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 
