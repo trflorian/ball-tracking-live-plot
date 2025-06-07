@@ -40,6 +40,11 @@ def main() -> None:
 
     args = parse_args()
 
+    cap = cv2.VideoCapture(str(args.video_path))
+    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
     rr.init("ball_tracking", spawn=True)
 
     # Rerun entity paths
@@ -50,12 +55,20 @@ def main() -> None:
     id_frame_traj = "frame/trajectory"
     id_frame_point = "frame/points"
     id_frame_circle = "frame/circle"
+    id_frame_vel_arrow = "frame/velocity_arrow"
 
     # Blueprint layout setup
     view_pos = rrb.TimeSeriesView(origin=id_pos, axis_y=rrb.ScalarAxis(range=(0, 700)))
     view_vel = rrb.TimeSeriesView(origin=id_vel, axis_y=rrb.ScalarAxis(range=(-200, 200)))
     view_acc = rrb.TimeSeriesView(origin=id_acc, axis_y=rrb.ScalarAxis(range=(-30, 10)))
-    view_frame = rrb.Spatial2DView(origin=id_frame)
+    frame_border = 50
+    view_frame = rrb.Spatial2DView(
+        origin=id_frame,
+        visual_bounds=rrb.VisualBounds2D(
+            x_range=(-frame_border, width + frame_border),
+            y_range=(-frame_border, height + frame_border),
+        ),
+    )
 
     layout = rrb.Blueprint(
         rrb.Vertical(
@@ -78,9 +91,6 @@ def main() -> None:
     rr.log(id_pos, rr.SeriesLines(colors=[0, 128, 255], names="pos y"), static=True)
     rr.log(id_vel, rr.SeriesLines(colors=[0, 200, 0], names="vel y"), static=True)
     rr.log(id_acc, rr.SeriesLines(colors=[200, 0, 0], names="acc y"), static=True)
-
-    cap = cv2.VideoCapture(str(args.video_path))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
 
     max_time = 1.2
     num_frames = int(max_time * fps)
@@ -170,9 +180,26 @@ def main() -> None:
             if vel.size > 0:
                 dv = vel[-1]
                 rr.log(id_vel, rr.Scalars(float(dv)))
+
+                # draw arrow for velocity
+                arrow_start = np.array(tracked_pos[-1])
+                arrow_end = arrow_start + np.array([0, -dv])
+                rr.log(
+                    id_frame_vel_arrow,
+                    rr.Arrows2D(
+                        vectors=[arrow_end - arrow_start],
+                        origins=[arrow_start],
+                        colors=[0, 255, 0],
+                        radii=2.0,
+                    ),
+                )
+
             if acc.size > 0:
                 da = acc[-1]
                 rr.log(id_acc, rr.Scalars(float(da)))
+
+        if len(contours) == 0:
+            rr.log(id_frame_vel_arrow, rr.Clear(recursive=False))
 
         if len(tracked_pos) > 0:
             strips = []
