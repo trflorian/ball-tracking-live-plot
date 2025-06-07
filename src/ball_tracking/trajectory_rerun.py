@@ -10,6 +10,19 @@ import rerun.blueprint as rrb
 from ball_tracking.core import Point2D
 
 
+def make_circle_points(radius: float, num_segments: int = 64, closed: bool = True) -> np.ndarray:
+    """
+    Generate points on a circle with a given radius.
+    Args:
+        radius: Radius of the circle.
+        num_segments: Number of points to generate on the circle.
+    Returns:
+        A 2D numpy array of shape (num_segments, 2) containing the x and y coordinates of the points.
+    """
+    angles = np.linspace(0, 2 * np.pi, num_segments, endpoint=closed)
+    return np.column_stack([np.cos(angles) * radius, np.sin(angles) * radius])
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -34,6 +47,9 @@ def main() -> None:
     id_vel = "ball/velocity_y"
     id_acc = "ball/acceleration_y"
     id_frame = "frame"
+    id_frame_traj = "frame/trajectory"
+    id_frame_point = "frame/points"
+    id_frame_circle = "frame/circle"
 
     # Blueprint layout setup
     view_pos = rrb.TimeSeriesView(origin=id_pos, axis_y=rrb.ScalarAxis(range=(0, 700)))
@@ -89,13 +105,15 @@ def main() -> None:
         ret, frame = cap.read()
         if not ret:
             break
-        frame_annotated = frame.copy()
 
         frame_index += 1
         if frame_index >= num_frames:
             break
 
         rr.set_time("frame_idx", sequence=frame_index)
+
+        frame_rgb: np.ndarray = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        rr.log(id_frame, rr.Image(frame_rgb))
 
         # filter based on color
         hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -120,8 +138,27 @@ def main() -> None:
             center = (x + w // 2, y + h // 2)
             tracked_pos.append(center)
 
-            cv2.circle(frame_annotated, center, 30, (255, 0, 0), 2)
-            cv2.circle(frame_annotated, center, 2, (255, 0, 0), 2)
+            circle = make_circle_points(radius=25.0)
+            circle = np.array(center) + circle
+            rr.log(
+                id_frame_circle,
+                rr.LineStrips2D(
+                    strips=[circle],
+                    colors=[0, 0, 255],
+                    radii=2.0,
+                ),
+            )
+            rr.log(
+                id_frame_point,
+                rr.Points2D(
+                    positions=[center],
+                    colors=[0, 0, 255],
+                    radii=4.0,
+                ),
+            )
+        else:
+            rr.log(id_frame_circle, rr.Clear(recursive=True))
+            rr.log(id_frame_point, rr.Clear(recursive=True))
 
         if len(tracked_pos) > 0:
             pos = np.array([tracked_pos[0][1] - pos[1] for pos in tracked_pos])
@@ -137,13 +174,15 @@ def main() -> None:
                 da = acc[-1]
                 rr.log(id_acc, rr.Scalars(float(da)))
 
-        # draw trajectory
-        for i in range(1, len(tracked_pos)):
-            cv2.line(frame_annotated, tracked_pos[i - 1], tracked_pos[i], (255, 0, 0), 1)
+        if len(tracked_pos) > 0:
+            strips = []
+            for i in range(1, len(tracked_pos)):
+                strips.append(np.array([tracked_pos[i - 1], tracked_pos[i]], dtype=np.float32))
 
-        # cv2.imshow("Frame", frame_annotated)
-        frame_annotated_rgb: np.ndarray = cv2.cvtColor(frame_annotated, cv2.COLOR_BGR2RGB)
-        rr.log("frame", rr.Image(frame_annotated_rgb))
+            rr.log(
+                id_frame_traj,
+                rr.LineStrips2D(strips=strips, colors=[0, 0, 255], radii=1.0),
+            )
 
     cap.release()
 
