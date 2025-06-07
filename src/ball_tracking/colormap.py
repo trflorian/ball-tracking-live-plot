@@ -4,9 +4,10 @@ import numpy as np
 
 def colormap_rainbow(value: float) -> tuple[int, int, int]:
     """Map a value between 0 and 1 to a color in the rainbow colormap."""
-    pixel_img = np.array([[value * 255]], dtype=np.uint8) # shape: (1, 1)
-    pixel_cmap_img = cv2.applyColorMap(pixel_img, cv2.COLORMAP_RAINBOW) # shape: (1, 1, 3)
+    pixel_img = np.array([[value * 255]], dtype=np.uint8)  # shape: (1, 1)
+    pixel_cmap_img = cv2.applyColorMap(pixel_img, cv2.COLORMAP_RAINBOW)  # shape: (1, 1, 3)
     return pixel_cmap_img.flatten().tolist()
+
 
 def visualize_colormap() -> None:
     target_shape = (500, 50, 3)

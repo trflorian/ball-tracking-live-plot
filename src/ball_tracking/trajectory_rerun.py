@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 import rerun as rr
 import rerun.blueprint as rrb
-from rerun import TimeColumn
 
 from ball_tracking.core import Point2D
 
@@ -145,6 +144,7 @@ def main() -> None:
                 coef = np.polyfit(t_seen, pos, deg=2)
                 t_pred = np.arange(frame_index, frame_index + PRED_HORIZON)
                 y_pred = np.polyval(coef, t_pred)
+                logger.info(y_pred)
 
         # draw trajectory
         for i in range(1, len(tracked_pos)):
