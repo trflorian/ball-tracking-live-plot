@@ -6,6 +6,7 @@ import cv2
 import numpy as np
 import rerun as rr
 import rerun.blueprint as rrb
+from rerun import TimeColumn
 
 from ball_tracking.core import Point2D
 
@@ -27,20 +28,59 @@ def main() -> None:
 
     args = parse_args()
 
-    rr.init("ball_tracking", spawn=True)
-    rr.send_blueprint(
-        rrb.Blueprint(
-            rrb.TimeSeriesView(
-                origin="/ball/position_y", axis_y=rrb.ScalarAxis(range=[0, 700])
+    layout = rrb.Blueprint(
+        rrb.Vertical(
+            rrb.Horizontal(  # ── top row ─────────────────────────
+                rrb.TimeSeriesView(
+                    origin="/ball/position_y",
+                    axis_y=rrb.ScalarAxis(range=(0, 700)),
+                ),
+                rrb.TimeSeriesView(
+                    origin="/ball/velocity_y",
+                    axis_y=rrb.ScalarAxis(range=(-200, 200)),
+                ),
+                rrb.TimeSeriesView(
+                    origin="/ball/acceleration_y",
+                    axis_y=rrb.ScalarAxis(range=(-30, 10)),
+                ),
             ),
-            rrb.TimeSeriesView(
-                origin="/ball/velocity_y", axis_y=rrb.ScalarAxis(range=[-200, 200])
-            ),
-            rrb.TimeSeriesView(
-                origin="/ball/acceleration_y", axis_y=rrb.ScalarAxis(range=[-30, 10])
-            ),
-            rrb.Spatial2DView(origin="/ball/trajectory"),
-        )
+            rrb.TensorView(
+                origin="/frame", name="RGB stream"
+            ),  # ── bottom row ─────────
+        ),
+    )
+    rr.init("ball_tracking", spawn=True, default_blueprint=layout)
+
+    rr.log(
+        "/ball/position_y",
+        rr.SeriesLines(colors=[0, 128, 255], names="pos y"),
+        static=True,
+    )
+    rr.log(
+        "/ball/velocity_y",
+        rr.SeriesLines(colors=[0, 200, 0], names="vel y"),
+        static=True,
+    )
+    rr.log(
+        "/ball/acceleration_y",
+        rr.SeriesLines(colors=[200, 0, 0], names="acc y"),
+        static=True,
+    )
+
+    rr.log(
+        "ball/position_y_pred",
+        rr.SeriesLines(colors=[0, 255, 0], names="pos-pred"),
+        static=True,
+    )
+    rr.log(
+        "ball/velocity_y_pred",
+        rr.SeriesLines(colors=[0, 255, 0], names="vel-pred"),
+        static=True,
+    )
+    rr.log(
+        "ball/acceleration_y_pred",
+        rr.SeriesLines(colors=[0, 255, 0], names="acc-pred"),
+        static=True,
     )
 
     cap = cv2.VideoCapture(str(args.video_path))
@@ -64,6 +104,8 @@ def main() -> None:
     tracked_pos: list[Point2D] = []
 
     frame_index = 0
+
+    PRED_HORIZON = 30
 
     while True:
         ret, frame = cap.read()
@@ -118,6 +160,19 @@ def main() -> None:
             if acc.size > 0:
                 da = acc[-1]
                 rr.log("ball/acceleration_y", rr.Scalars(float(da)))
+
+            t_seen = np.arange(pos.shape[0])
+            if len(t_seen) > 2:
+                coef = np.polyfit(t_seen, pos, deg=2)
+                t_pred = np.arange(frame_index, frame_index + PRED_HORIZON)
+                y_pred = np.polyval(coef, t_pred)
+
+                # -- push the whole curve in *one* call ---------------------------------
+                rr.send_columns(
+                    "ball/position_y_pred",
+                    indexes=[TimeColumn("frame_idx", sequence=t_pred)],
+                    columns=rr.Scalars.columns(scalars=y_pred),
+                )
 
         # draw trajectory
         for i in range(1, len(tracked_pos)):
