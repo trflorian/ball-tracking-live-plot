@@ -28,60 +28,41 @@ def main() -> None:
 
     args = parse_args()
 
+    rr.init("ball_tracking", spawn=True)
+
+    # Rerun entity paths
+    id_pos = "ball/position_y"
+    id_vel = "ball/velocity_y"
+    id_acc = "ball/acceleration_y"
+    id_frame = "frame"
+
+    # Blueprint layout setup
+    view_pos = rrb.TimeSeriesView(origin=id_pos, axis_y=rrb.ScalarAxis(range=(0, 700)))
+    view_vel = rrb.TimeSeriesView(origin=id_vel, axis_y=rrb.ScalarAxis(range=(-200, 200)))
+    view_acc = rrb.TimeSeriesView(origin=id_acc, axis_y=rrb.ScalarAxis(range=(-30, 10)))
+    view_frame = rrb.Spatial2DView(origin=id_frame)
+
     layout = rrb.Blueprint(
         rrb.Vertical(
-            rrb.Horizontal(  # ── top row ─────────────────────────
-                rrb.TimeSeriesView(
-                    origin="/ball/position_y",
-                    axis_y=rrb.ScalarAxis(range=(0, 700)),
-                ),
-                rrb.TimeSeriesView(
-                    origin="/ball/velocity_y",
-                    axis_y=rrb.ScalarAxis(range=(-200, 200)),
-                ),
-                rrb.TimeSeriesView(
-                    origin="/ball/acceleration_y",
-                    axis_y=rrb.ScalarAxis(range=(-30, 10)),
-                ),
+            # Show time series views for position, velocity, and acceleration
+            rrb.Horizontal(
+                view_pos,
+                view_vel,
+                view_acc,
             ),
-            rrb.TensorView(
-                origin="/frame", name="RGB stream"
-            ),  # ── bottom row ─────────
+            # Show video stream
+            view_frame,
+            row_shares=[0.33],
         ),
+        rrb.BlueprintPanel(state="expanded"),
+        rrb.SelectionPanel(state="collapsed"),
+        rrb.TimePanel(state="collapsed"),
     )
-    rr.init("ball_tracking", spawn=True, default_blueprint=layout)
+    rr.send_blueprint(layout)
 
-    rr.log(
-        "/ball/position_y",
-        rr.SeriesLines(colors=[0, 128, 255], names="pos y"),
-        static=True,
-    )
-    rr.log(
-        "/ball/velocity_y",
-        rr.SeriesLines(colors=[0, 200, 0], names="vel y"),
-        static=True,
-    )
-    rr.log(
-        "/ball/acceleration_y",
-        rr.SeriesLines(colors=[200, 0, 0], names="acc y"),
-        static=True,
-    )
-
-    rr.log(
-        "ball/position_y_pred",
-        rr.SeriesLines(colors=[0, 255, 0], names="pos-pred"),
-        static=True,
-    )
-    rr.log(
-        "ball/velocity_y_pred",
-        rr.SeriesLines(colors=[0, 255, 0], names="vel-pred"),
-        static=True,
-    )
-    rr.log(
-        "ball/acceleration_y_pred",
-        rr.SeriesLines(colors=[0, 255, 0], names="acc-pred"),
-        static=True,
-    )
+    rr.log(id_pos, rr.SeriesLines(colors=[0, 128, 255], names="pos y"), static=True)
+    rr.log(id_vel, rr.SeriesLines(colors=[0, 200, 0], names="vel y"), static=True)
+    rr.log(id_acc, rr.SeriesLines(colors=[200, 0, 0], names="acc y"), static=True)
 
     cap = cv2.VideoCapture(str(args.video_path))
     fps = int(cap.get(cv2.CAP_PROP_FPS))
@@ -132,9 +113,7 @@ def main() -> None:
 
         # combine both masks
         mask = cv2.bitwise_and(mask_color, mask_fg)
-        mask = cv2.morphologyEx(
-            mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13))
-        )
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13)))
 
         # find largest contour corresponding to the ball we want to track
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -152,14 +131,14 @@ def main() -> None:
             vel = np.diff(pos)
             acc = np.diff(vel)
 
-            rr.log("ball/position_y", rr.Scalars(float(pos[-1])))
+            rr.log(id_pos, rr.Scalars(float(pos[-1])))
 
             if vel.size > 0:
                 dv = vel[-1]
-                rr.log("ball/velocity_y", rr.Scalars(float(dv)))
+                rr.log(id_vel, rr.Scalars(float(dv)))
             if acc.size > 0:
                 da = acc[-1]
-                rr.log("ball/acceleration_y", rr.Scalars(float(da)))
+                rr.log(id_acc, rr.Scalars(float(da)))
 
             t_seen = np.arange(pos.shape[0])
             if len(t_seen) > 2:
@@ -167,21 +146,12 @@ def main() -> None:
                 t_pred = np.arange(frame_index, frame_index + PRED_HORIZON)
                 y_pred = np.polyval(coef, t_pred)
 
-                # -- push the whole curve in *one* call ---------------------------------
-                rr.send_columns(
-                    "ball/position_y_pred",
-                    indexes=[TimeColumn("frame_idx", sequence=t_pred)],
-                    columns=rr.Scalars.columns(scalars=y_pred),
-                )
-
         # draw trajectory
         for i in range(1, len(tracked_pos)):
-            cv2.line(
-                frame_annotated, tracked_pos[i - 1], tracked_pos[i], (255, 0, 0), 1
-            )
+            cv2.line(frame_annotated, tracked_pos[i - 1], tracked_pos[i], (255, 0, 0), 1)
 
         # cv2.imshow("Frame", frame_annotated)
-        frame_annotated_rgb = cv2.cvtColor(frame_annotated, cv2.COLOR_BGR2RGB)
+        frame_annotated_rgb: np.ndarray = cv2.cvtColor(frame_annotated, cv2.COLOR_BGR2RGB)
         rr.log("frame", rr.Image(frame_annotated_rgb))
 
     cap.release()
