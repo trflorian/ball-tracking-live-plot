@@ -85,8 +85,6 @@ def main() -> None:
 
     frame_index = 0
 
-    PRED_HORIZON = 30
-
     while True:
         ret, frame = cap.read()
         if not ret:
@@ -138,13 +136,6 @@ def main() -> None:
             if acc.size > 0:
                 da = acc[-1]
                 rr.log(id_acc, rr.Scalars(float(da)))
-
-            t_seen = np.arange(pos.shape[0])
-            if len(t_seen) > 2:
-                coef = np.polyfit(t_seen, pos, deg=2)
-                t_pred = np.arange(frame_index, frame_index + PRED_HORIZON)
-                y_pred = np.polyval(coef, t_pred)
-                logger.info(y_pred)
 
         # draw trajectory
         for i in range(1, len(tracked_pos)):
