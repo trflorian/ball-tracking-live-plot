@@ -6,6 +6,7 @@ from pathlib import Path
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
+from matplotlib.axes import Axes
 from matplotlib.backends.backend_agg import FigureCanvasAgg
 
 from ball_tracking.core import Point2D
@@ -31,6 +32,7 @@ def parse_args() -> argparse.Namespace:
     )
     return parser.parse_args()
 
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger(__name__)
@@ -54,7 +56,7 @@ def main() -> None:
     tracked_pos: list[Point2D] = []
 
     fig = plt.figure(figsize=(12, 3), dpi=100)
-    axs: list[plt.Axes] = fig.subplots(nrows=1, ncols=3)
+    axs: list[Axes] = fig.subplots(nrows=1, ncols=3)
 
     axs[0].set_title("Position")
     axs[0].set_ylim(0, 700)
@@ -67,15 +69,9 @@ def main() -> None:
     pl_vel = axs[1].plot([], [], c="b", label="Measurement")[0]
     pl_acc = axs[2].plot([], [], c="b", label="Measurement")[0]
 
-    pl_pos_pred = axs[0].plot(
-        [], [], c="g", linestyle="--", label="Prediction", alpha=0.5
-    )[0]
-    pl_vel_pred = axs[1].plot(
-        [], [], c="g", linestyle="--", label="Prediction", alpha=0.5
-    )[0]
-    pl_acc_pred = axs[2].plot(
-        [], [], c="g", linestyle="--", label="Prediction", alpha=0.5
-    )[0]
+    pl_pos_pred = axs[0].plot([], [], c="g", linestyle="--", label="Prediction", alpha=0.5)[0]
+    pl_vel_pred = axs[1].plot([], [], c="g", linestyle="--", label="Prediction", alpha=0.5)[0]
+    pl_acc_pred = axs[2].plot([], [], c="g", linestyle="--", label="Prediction", alpha=0.5)[0]
 
     mark_pos = axs[0].plot([], [], c="b", marker="o", markersize=5)[0]
     mark_vel = axs[1].plot([], [], c="b", marker="o", markersize=5)[0]
@@ -121,9 +117,7 @@ def main() -> None:
 
         # combine both masks
         mask = cv2.bitwise_and(mask_color, mask_fg)
-        mask = cv2.morphologyEx(
-            mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13))
-        )
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13)))
 
         # find largest contour corresponding to the ball we want to track
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -138,9 +132,7 @@ def main() -> None:
 
         # draw trajectory
         for i in range(1, len(tracked_pos)):
-            cv2.line(
-                frame_annotated, tracked_pos[i - 1], tracked_pos[i], (255, 0, 0), 1
-            )
+            cv2.line(frame_annotated, tracked_pos[i - 1], tracked_pos[i], (255, 0, 0), 1)
 
         row1 = cv2.hconcat([frame, cv2.cvtColor(mask_color, cv2.COLOR_GRAY2BGR)])
         row2 = cv2.hconcat(
@@ -214,9 +206,7 @@ def main() -> None:
 
         # pad plot with white to match width of frame, same left and right padding
         pad = (frame.shape[1] - plot.shape[1]) // 2
-        plot = cv2.copyMakeBorder(
-            plot, 10, 10, pad, pad, cv2.BORDER_CONSTANT, value=(255, 255, 255)
-        )
+        plot = cv2.copyMakeBorder(plot, 10, 10, pad, pad, cv2.BORDER_CONSTANT, value=(255, 255, 255))
 
         # vstack frame and plot
         frame_annotated = cv2.vconcat([plot, frame_annotated])
@@ -233,9 +223,9 @@ def main() -> None:
         key = cv2.waitKey(sleep_time) & 0xFF
         if key & 0xFF == ord("q"):
             break
-    
+
     cap.release()
-    
+
     cv2.waitKey(0)
     cv2.destroyAllWindows()
 

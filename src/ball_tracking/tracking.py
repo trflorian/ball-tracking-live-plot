@@ -69,9 +69,7 @@ def main() -> None:
         loop=args.loop,
         skip_seconds=args.skip_seconds,
     ) as video_loop:
-        logger.info(
-            f"Loaded video: {video_path}, resolution: {video_loop.video_resolution}, fps: {video_loop.fps}"
-        )
+        logger.info(f"Loaded video: {video_path}, resolution: {video_loop.video_resolution}, fps: {video_loop.fps}")
 
         if args.save_video:
             video_writer = cv2.VideoWriter(
@@ -84,9 +82,7 @@ def main() -> None:
             video_writer = None
 
         # initialize background model
-        bg_sub = cv2.createBackgroundSubtractorMOG2(
-            varThreshold=128, detectShadows=False
-        )
+        bg_sub = cv2.createBackgroundSubtractorMOG2(varThreshold=128, detectShadows=False)
 
         tracked_pos: deque[Point2D] = deque(maxlen=args.trajectory_length)
 
@@ -99,9 +95,7 @@ def main() -> None:
 
             # filter based on color
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            mask_color = cv2.inRange(
-                hsv, np.array([30, 30, 30]), np.array([100, 150, 150])
-            )
+            mask_color = cv2.inRange(hsv, np.array([30, 30, 30]), np.array([100, 150, 150]))
             mask_color = cv2.morphologyEx(
                 mask_color,
                 cv2.MORPH_OPEN,
@@ -124,9 +118,7 @@ def main() -> None:
             )
 
             # find largest contour corresponding to the ball we want to track
-            contours, _ = cv2.findContours(
-                mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
-            )
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             if len(contours) > 0:
                 largest_contour = max(contours, key=cv2.contourArea)
                 x, y, w, h = cv2.boundingRect(largest_contour)
