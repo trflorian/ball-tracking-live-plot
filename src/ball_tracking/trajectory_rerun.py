@@ -4,9 +4,9 @@ from pathlib import Path
 
 import cv2
 import numpy as np
+
 import rerun as rr
 import rerun.blueprint as rrb
-
 from ball_tracking.core import Point2D
 
 
